@@ -1,0 +1,1 @@
+Backup existing app.py and templates/index.html; replace with these two files. Keep run_secure.py unchanged. Browser-device camera settings and results are isolated per browser session. Server Camo mode remains shared. Laptop Camo must appear as browser video input. Galaxy Tab supports its exposed cameras.
