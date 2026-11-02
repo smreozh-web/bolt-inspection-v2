@@ -1,0 +1,391 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AI SCREW | 나사 검사 시스템</title><style>
+:root{font-family:system-ui,'Malgun Gothic',sans-serif;color:#e9f1ff;background:#09111f}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1240px;margin:auto;padding:28px}header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:30px}h1{font-size:25px;margin:0}h2{font-size:17px;margin:0 0 16px}.sub{color:#91a4be;margin:7px 0 0}.pill{background:#1b2a41;border:1px solid #334a68;padding:8px 13px;border-radius:40px;font-size:13px}.grid{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(270px,1fr);gap:18px}.card{background:#111e30;border:1px solid #283a51;border-radius:18px;padding:20px;margin-bottom:18px}.feed{background:#030812;min-height:300px;aspect-ratio:16/9;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center}.feed img{width:100%;height:100%;object-fit:contain}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.metric{background:#192b42;border-radius:12px;padding:16px}.metric small{color:#a3b5cb;display:block}.metric strong{font-size:22px;display:block;margin-top:8px;overflow-wrap:anywhere}.item{padding:14px 0;border-bottom:1px solid #2a3b52;display:flex;justify-content:space-between;gap:10px}.muted{color:#9eb0c6;font-size:13px}.empty{padding:26px 0;color:#94a8c1;text-align:center}.dot{display:inline-block;width:8px;height:8px;background:#46d5a2;border-radius:50%;margin-right:7px}.warn{color:#ffc77b}footer{color:#8095b0;font-size:12px;margin-top:20px}@media(max-width:850px){.grid{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}header{align-items:flex-start;flex-direction:column}.wrap{padding:16px}}
+
+select,input[type=range]{width:100%;accent-color:#5fc8ff}select{background:#192b42;color:#e9f1ff;border:1px solid #425a78;border-radius:9px;padding:12px;font-size:16px}.settings-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.status{padding:18px;border-radius:12px;text-align:center;background:#1b2a41;border:1px solid #425a78}.status.ok{background:#123b32;border-color:#27b38c;color:#70efbd}.status.ng{background:#4b202a;border-color:#e96c78;color:#ffb0b8}.status.review{background:#47351b;border-color:#d6a34c;color:#ffd18a}.status strong{display:block;font-size:26px;margin:6px 0}.prob{font-size:30px;font-weight:800;color:#5fc8ff}.bar{height:12px;background:#283a51;border-radius:10px;overflow:hidden}.bar span{display:block;height:100%;background:#5fc8ff;width:0;transition:width .25s}.btn{background:#2679b8;color:white;border:0;padding:11px 16px;border-radius:9px;cursor:pointer}.btn:hover{background:#3193d7}.setting-note{font-size:12px;color:#9eb0c6;margin-top:8px}@media(max-width:650px){.settings-row{grid-template-columns:1fr}}
+.guide p{color:#c2cee0;margin:9px 0;font-size:14px}.spec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.spec-grid span{background:#2b3b55;border-radius:8px;text-align:center;padding:12px 6px;font-size:13px}.header-actions{display:flex;align-items:center;gap:10px}.logout-btn{background:transparent;color:#b7cbe4;border:1px solid #40536d;border-radius:9px;padding:9px 12px;cursor:pointer}.grid aside .card:first-child{padding:14px 18px}.grid aside .card:first-child h2{margin-bottom:6px}.grid aside .card:first-child p{margin:6px 0}.grid aside .card .status strong{font-size:26px}.grid aside .card .prob{font-size:24px}.metrics{margin-top:0;margin-bottom:18px}@media(max-width:600px){.spec-grid{grid-template-columns:repeat(3,1fr)}.header-actions{flex-wrap:wrap}}
+.camera-controls{display:flex;gap:10px;align-items:end;margin:0 0 14px;flex-wrap:wrap}.camera-controls>div{flex:1;min-width:180px}.camera-controls label{display:block;margin-bottom:7px}.camera-controls button{white-space:nowrap}.camera-message{margin:0 0 10px;min-height:18px}
+
+/* 촬영 가이드: 설명 왼쪽, 실제 검출 예시 오른쪽 */
+.guide-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);align-items:center;gap:20px}
+.guide-copy{min-width:0}
+.guide-visual{min-width:0}
+.guide-visual img{display:block;width:100%;height:auto;object-fit:contain;border-radius:10px;border:1px solid #40536d}
+@media(max-width:760px){.guide-layout{grid-template-columns:1fr;gap:14px}}
+</style></head><body><div class="wrap"><header><div><h1>🔩 AI SCREW <span style="color:#5fc8ff">INSPECTION</span></h1><p class="sub">YOLO11n 위치 탐지 · ResNet18 규격 분류 · 실시간 모니터링</p></div><div class="header-actions"><span class="pill"><span class="dot"></span>보안 실시간 모니터링</span><form method="post" action="/logout"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="logout-btn" type="submit">로그아웃</button></form></div></header><div class="card guide"><div class="guide-layout"><div class="guide-copy"><h2>▤ 촬영 가이드</h2><p>1. 카메라에 빛이 새어 들어가지 않게 캡을 씌워주세요.</p><p>2. 촬영 거리는 16~19cm를 유지해주세요.</p><p>3. 그림자가 많이 생기지 않는 환경에서 검수해주세요.</p></div><div class="guide-visual"><img src="{{ url_for('static', filename='images/bolt_detection_guide.png') }}" alt="볼트 6개를 검출하고 측정한 촬영 예시" loading="lazy"></div></div></div><div class="card"><h2>지원 규격</h2><div class="spec-grid"><span>M3×8</span><span>M3×12</span><span>M4×8</span><span>M4×12</span><span>M5×8</span><span>M5×12</span></div></div><div class="card"><h2>투입 검사 설정</h2><div class="settings-row"><div><label class="muted" for="target">요구 나사 규격</label><select id="target"><option>M3x8</option><option>M3x12</option><option>M4x8</option><option>M4x12</option><option>M5x8</option><option>M5x12</option></select></div><div><label class="muted" for="threshold">판정 신뢰도 기준: <b id="threshold-value">80%</b></label><input id="threshold" type="range" min="50" max="95" step="5" value="80"></div></div><p class="setting-note">접속 기기 카메라 모드에서는 각 사용자에게만 적용됩니다. 서버 Camo 모드의 설정은 서버 카메라를 공유하는 사용자에게 적용됩니다.</p><button id="apply" class="btn" type="button">검사 설정 적용</button><p id="setting-message" class="muted"></p></div><div class="grid" style="margin-top:18px"><section><div class="card"><h2>실시간 검사 영상</h2>
+<div class="camera-controls" style="margin-top:10px">
+  <button id="device-mode" class="btn" type="button">접속 기기 카메라</button>
+  <button id="server-mode" class="logout-btn" type="button">서버 Camo 카메라</button>
+</div>
+<div id="device-camera-controls" class="camera-controls">
+  <div><label class="muted" for="device-camera-select">이 기기의 카메라 선택 (노트북 Camo 포함)</label>
+    <select id="device-camera-select"><option value="">카메라 검색 중...</option></select></div>
+  <button id="device-camera-apply" class="btn" type="button">선택 카메라 연결</button>
+  <button id="device-camera-refresh" class="logout-btn" type="button">목록 새로고침</button>
+</div>
+<p id="device-message" class="muted camera-message">접속 기기 카메라 연결 준비 중...</p><div id="server-camera-controls" class="camera-controls" style="display:none"><div><label class="muted" for="camera-select">사용할 카메라</label><select id="camera-select"><option value="">카메라 목록 불러오는 중...</option></select></div><button id="camera-apply" class="btn" type="button">카메라 적용</button><button id="camera-refresh" class="logout-btn" type="button">목록 새로고침</button></div><p id="camera-message" class="muted camera-message"></p><div class="feed">
+  <video id="device-video" autoplay muted playsinline style="display:none;width:100%;max-height:540px;object-fit:contain"></video>
+  <img id="server-video" src="/video_feed" alt="서버 카메라 영상이 준비되면 표시됩니다" style="display:none">
+</div>
+<canvas id="device-canvas" style="display:none"></canvas><p class="muted">접속 기기 카메라를 우선 연결합니다. 권한을 허용해야 하며, 필요하면 서버 Camo 모드로 전환할 수 있습니다.</p></div></section><aside><div class="card"><h2>AI 모델 상태</h2><p id="model" class="muted">확인 중</p><p id="error" class="warn"></p></div><div class="card"><h2>탐지된 나사 규격</h2><div id="results" class="empty">나사를 탐지하면 결과가 표시됩니다.</div></div><div class="card"><h2>전체 투입 판정</h2><div id="overall" class="status"><strong>미검출</strong><span>나사를 카메라에 보여주세요.</span></div><div style="margin-top:16px"><span class="muted">선택 규격일 모델 예측 확률 (나사 1개 기준)</span><div id="target-prob" class="prob">—</div><div class="bar"><span id="prob-bar"></span></div></div><p class="setting-note">여러 나사가 탐지되면 아래에서 각 나사의 확률과 판정을 확인할 수 있습니다. 확률은 모델 출력값이며 실제 정답률을 보장하지 않습니다.</p></div></aside></div><div class="metrics"><div class="metric"><small>현재 탐지 개수</small><strong id="count">—</strong></div><div class="metric"><small>카메라 상태</small><strong id="camera" style="font-size:17px">연결 대기</strong></div><div class="metric"><small>마지막 갱신</small><strong id="updated" style="font-size:17px">—</strong></div></div><footer>AI SCREW · 캡스톤 프로젝트 · 보안 로그인 · 실험용 시스템</footer></div><script>
+const csrfToken={{ csrf_token|tojson }};
+const el=id=>document.getElementById(id);
+const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const percent=v=>v==null?'—':(Number(v)*100).toFixed(1)+'%';
+let editing=false,initialized=false;
+let deviceSettings={target_spec:'M3x8',threshold:0.8};
+let mode='device', deviceStream=null, deviceResult=null, inspectBusy=false;
+let inspectTimer=null;
+function stopDevice(){
+  if(inspectTimer){
+    clearInterval(inspectTimer);
+    inspectTimer=null;
+  }
+
+  if(deviceStream){
+    deviceStream.getTracks().forEach(track=>track.stop());
+    deviceStream=null;
+  }
+
+  el('device-video').srcObject=null;
+  el('device-video').style.opacity='1';
+
+  document.getElementById('numbered-preview')?.remove();
+}
+
+async function inspectFrame(){
+  const video=el('device-video');
+
+  if(
+    mode!=='device' ||
+    !deviceStream ||
+    inspectBusy ||
+    video.readyState<2
+  ){
+    return;
+  }
+
+  inspectBusy=true;
+  const currentStream=deviceStream;
+
+  try{
+    const snapshot=document.createElement('canvas');
+
+    const ratio=Math.min(
+      1,
+      960/video.videoWidth,
+      960/video.videoHeight
+    );
+
+    snapshot.width=Math.max(
+      1,
+      Math.round(video.videoWidth*ratio)
+    );
+
+    snapshot.height=Math.max(
+      1,
+      Math.round(video.videoHeight*ratio)
+    );
+
+    const ctx=snapshot.getContext('2d');
+
+    ctx.drawImage(
+      video,
+      0,
+      0,
+      snapshot.width,
+      snapshot.height
+    );
+
+    const blob=await new Promise(resolve=>{
+      snapshot.toBlob(resolve,'image/jpeg',0.75);
+    });
+
+    if(!blob){
+      return;
+    }
+
+    const response=await fetch('/api/inspect_device',{
+      method:'POST',
+      headers:{
+        'Content-Type':'image/jpeg',
+        'X-CSRF-Token':csrfToken
+      },
+      body:blob
+    });
+
+    if(response.status===401){
+      location.href='/login';
+      return;
+    }
+
+    const data=await response.json();
+
+    if(!response.ok){
+      throw new Error(data.error||'검사 실패');
+    }
+
+    if(
+      mode!=='device' ||
+      deviceStream!==currentStream
+    ){
+      return;
+    }
+
+    // 볼트 중심 위치를 기준으로 왼쪽부터 정렬
+    data.detections=(data.detections||[]).sort((a,b)=>{
+      const centerA=(a.box[0]+a.box[2])/2;
+      const centerB=(b.box[0]+b.box[2])/2;
+      return centerA-centerB;
+    });
+
+    // 원본 사진을 지우고 투명한 화면에 박스와 번호만 그림
+    ctx.clearRect(0,0,snapshot.width,snapshot.height);
+
+    ctx.lineWidth=3;
+    ctx.font='bold 26px sans-serif';
+    ctx.textBaseline='top';
+
+    // 검사한 프레임 위에 박스와 번호 표시
+    data.detections.forEach((d,index)=>{
+      const [x1,y1,x2,y2]=d.box;
+
+      ctx.strokeStyle='#00ff66';
+      ctx.strokeRect(
+        x1,
+        y1,
+        x2-x1,
+        y2-y1
+      );
+
+      const label='#'+(index+1);
+      const labelWidth=ctx.measureText(label).width+12;
+      const labelY=y1>=34?y1-34:y1;
+
+      ctx.fillStyle='rgba(0,0,0,0.8)';
+      ctx.fillRect(
+        x1,
+        labelY,
+        labelWidth,
+        32
+      );
+
+      ctx.fillStyle='#ffffff';
+      ctx.fillText(
+        label,
+        x1+6,
+        labelY+3
+      );
+    });
+
+    let preview=document.getElementById('numbered-preview');
+
+    if(!preview){
+      preview=document.createElement('canvas');
+      preview.id='numbered-preview';
+
+      const feed=video.parentElement;
+      feed.style.position='relative';
+
+      preview.style.cssText=
+        'position:absolute;'+
+        'inset:0;'+
+        'width:100%;'+
+        'height:100%;'+
+        'object-fit:contain;'+
+        'background:transparent;'+
+        'pointer-events:none;';
+
+      feed.appendChild(preview);
+    }
+
+        preview.width=snapshot.width;
+    preview.height=snapshot.height;
+
+    // 박스 표시 영역을 실제 video 요소와 같은 위치·크기로 설정
+    preview.style.inset='auto';
+    preview.style.left=video.offsetLeft+'px';
+    preview.style.top=video.offsetTop+'px';
+    preview.style.width=video.clientWidth+'px';
+    preview.style.height=video.clientHeight+'px';
+
+    // 영상과 박스에 같은 화면 맞춤 방식 적용
+    video.style.objectFit='contain';
+    video.style.objectPosition='center center';
+
+    preview.style.objectFit='contain';
+    preview.style.objectPosition='center center';
+    preview.style.background='transparent';
+
+    preview.getContext('2d').drawImage(
+      snapshot,
+      0,
+      0
+    );
+
+    video.style.opacity='1';
+
+    // 영상 번호와 같은 순서로 오른쪽 목록 표시
+    deviceResult=data;
+    renderStatus(data);
+
+    el('device-message').textContent=
+      '검사 중 · 볼트 번호는 화면 왼쪽부터 표시';
+
+  }catch(error){
+    if(
+      mode==='device' &&
+      deviceStream===currentStream
+    ){
+      el('device-message').textContent=
+        '검사 오류: '+error.message;
+    }
+  }finally{
+    inspectBusy=false;
+  }
+}
+let deviceSerial=0;
+async function loadDeviceCameras(){
+ const select=el('device-camera-select'), previous=select.value;
+ try{
+  if(!navigator.mediaDevices?.enumerateDevices)throw new Error('브라우저에서 카메라 목록을 지원하지 않습니다.');
+  const cameras=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
+  select.replaceChildren();
+  if(!cameras.length){
+   const o=document.createElement('option');o.value='';o.textContent='카메라 없음';select.appendChild(o);
+  }
+  for(const [i,c] of cameras.entries()){
+   const o=document.createElement('option');o.value=c.deviceId;
+   o.textContent=c.label||('카메라 '+(i+1));select.appendChild(o);
+  }
+  const active=deviceStream?.getVideoTracks()[0]?.getSettings()?.deviceId;
+  const choice=[previous,active].find(id=>cameras.some(c=>c.deviceId===id));
+  if(choice)select.value=choice;
+  return cameras;
+ }catch(e){el('device-message').textContent='카메라 목록 오류: '+e.message;return [];}
+}
+async function useDevice(selectedId=null){
+ const serial=++deviceSerial;
+ mode='device';deviceResult=null;
+ el('server-video').style.display='none';
+ el('server-video').removeAttribute('src');
+ el('server-camera-controls').style.display='none';
+ el('device-camera-controls').style.display='flex';
+ el('device-video').style.display='block';
+ el('device-message').textContent='접속 기기 카메라 연결 중...';
+ stopDevice();
+ try{
+  if(!navigator.mediaDevices?.getUserMedia)throw new Error('HTTPS 및 카메라 지원 브라우저가 필요합니다.');
+  const candidates=selectedId
+   ? [{video:{deviceId:{exact:selectedId}},audio:false}]
+   : [{video:{facingMode:{ideal:'environment'}},audio:false},{video:true,audio:false}];
+  let stream=null,lastError=null;
+  for(const c of candidates){
+   try{stream=await navigator.mediaDevices.getUserMedia(c);break;}
+   catch(e){lastError=e;}
+  }
+  if(!stream)throw lastError||new Error('카메라 시작 실패');
+  if(mode!=='device'||serial!==deviceSerial){
+   stream.getTracks().forEach(t=>t.stop());return;
+  }
+  deviceStream=stream;
+  const video=el('device-video');
+  video.srcObject=stream;
+  await video.play();
+  if(mode!=='device'||serial!==deviceSerial){stopDevice();return;}
+  el('device-message').textContent='접속 기기 카메라 연결됨';
+  await loadDeviceCameras();
+  inspectTimer=setInterval(inspectFrame,1200);inspectFrame();
+ }catch(e){
+  if(mode==='device'&&serial===deviceSerial){
+   el('device-message').textContent='접속 기기 카메라 연결 실패: '+e.message+' — 다른 카메라를 선택하거나 카메라를 사용하는 앱을 종료하세요.';
+   await loadDeviceCameras();
+  }
+ }
+}
+function useServer(){
+ ++deviceSerial;
+ mode='server';stopDevice();deviceResult=null;
+ el('device-video').style.display='none';
+ el('device-camera-controls').style.display='none';
+ el('server-video').style.display='block';
+ el('server-video').src='/video_feed';
+ el('server-camera-controls').style.display='flex';
+ el('device-message').textContent='서버 Camo 카메라 모드 (서버 PC 영상 공유)';
+}
+el('device-camera-apply').addEventListener('click',()=>{
+ const id=el('device-camera-select').value;
+ if(id)useDevice(id);
+ else el('device-message').textContent='카메라 목록에서 장치를 선택해 주세요.';
+});
+el('device-camera-refresh').addEventListener('click',loadDeviceCameras);
+if(navigator.mediaDevices?.addEventListener){
+ navigator.mediaDevices.addEventListener('devicechange',loadDeviceCameras);
+}
+el('device-mode').addEventListener('click',()=>useDevice());
+el('server-mode').addEventListener('click',useServer);
+window.addEventListener('pagehide',stopDevice);
+
+async function loadCameras(){
+ const select=el('camera-select');
+ try{
+  const r=await fetch('/api/cameras',{cache:'no-store'});const j=await r.json();
+  if(!r.ok)throw new Error(j.error||'목록 조회 실패');
+  select.replaceChildren();
+  for(const device of j.devices){const option=document.createElement('option');option.value=device.id;option.textContent=device.label;select.appendChild(option)}
+  if(j.devices.length===0){const option=document.createElement('option');option.textContent='감지된 카메라 없음';option.value='';select.appendChild(option)}
+  else if(j.devices.some(d=>d.id===j.selected))select.value=j.selected;
+  el('camera-message').textContent=j.devices.length?'카메라를 선택한 뒤 적용을 눌러주세요.':'연결된 카메라가 없습니다.';
+ }catch(e){el('camera-message').textContent='카메라 목록 오류: '+e.message}
+}
+el('camera-refresh').addEventListener('click',loadCameras);
+el('camera-apply').addEventListener('click',async()=>{
+ const button=el('camera-apply');const id=el('camera-select').value;if(!id)return;
+ button.disabled=true;
+ try{
+  const r=await fetch('/api/cameras',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken},body:JSON.stringify({id})});
+  const j=await r.json();if(!r.ok)throw new Error(j.error||'카메라 전환 실패');
+  el('camera-message').textContent=j.message;
+ }catch(e){el('camera-message').textContent='카메라 오류: '+e.message}finally{button.disabled=false}
+});
+loadCameras();
+el('target').addEventListener('change',()=>{editing=true;el('setting-message').textContent='설정 적용 버튼을 눌러주세요.'});
+el('threshold').addEventListener('input',()=>{editing=true;el('threshold-value').textContent=el('threshold').value+'%';el('setting-message').textContent='설정 적용 버튼을 눌러주세요.'});
+el('apply').addEventListener('click',async()=>{
+  const button=el('apply');button.disabled=true;
+  try{
+    const r=await fetch(mode==='device'?'/api/device_settings':'/api/settings',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken},body:JSON.stringify({target_spec:el('target').value,threshold:Number(el('threshold').value)/100})});
+    const data=await r.json();if(!r.ok)throw new Error(data.error||'설정 저장 실패');
+    editing=false;if(mode==='device')deviceSettings=data;el('setting-message').textContent='설정이 적용되었습니다.';
+  }catch(e){el('setting-message').textContent='설정 오류: '+e.message}finally{button.disabled=false}
+});
+async function update(){
+ try{
+  const r=await fetch('/api/status',{cache:'no-store'});if(r.status===401){location.href="/login";return;}if(!r.ok)throw new Error('HTTP '+r.status);
+  const j=await r.json();
+  if(mode==='device'){
+    if(deviceResult)renderStatus(deviceResult);
+    else{el('model').textContent=j.model;el('error').textContent=j.error||'';}
+    if(!editing){el('target').value=deviceSettings.target_spec;el('threshold').value=Math.round(deviceSettings.threshold*100);el('threshold-value').textContent=el('threshold').value+'%';}
+    return;
+  }
+  renderStatus(j);
+ }catch(e){el('error').textContent='서버 연결 오류: '+e.message}
+}
+function renderStatus(j){
+  el('count').textContent=j.count;el('camera').textContent=j.camera;el('updated').textContent=j.updated||'—';
+  el('model').textContent=j.model;el('error').textContent=j.error||'';
+  if(!editing){const cfg=mode==='device'?deviceSettings:j;el('target').value=cfg.target_spec||'M3x8';el('threshold').value=Math.round((cfg.threshold??.8)*100);el('threshold-value').textContent=el('threshold').value+'%'}
+  initialized=true;
+  const status=j.overall||'미검출';
+  el('overall').className='status '+(status==='정상투입'?'ok':status==='오투입'?'ng':status==='확인 필요'?'review':'');
+  el('overall').innerHTML='<strong>'+esc(status)+(status==='정상투입'?' (OK)':status==='오투입'?' (NG)':'')+'</strong><span>'+esc(status==='정상투입'?'탐지된 모든 나사가 요구 규격과 일치합니다.':status==='오투입'?'요구 규격과 다른 나사가 탐지되었습니다.':status==='확인 필요'?'모델 신뢰도가 부족하거나 분류할 수 없습니다.':status==='판정 갱신 중'?'새 설정으로 다시 검사하고 있습니다.':'나사를 카메라에 보여주세요.')+'</span>';
+  el('target-prob').textContent=percent(j.target_probability);
+  el('prob-bar').style.width=j.target_probability==null?'0%':Math.max(0,Math.min(100,j.target_probability*100))+'%';
+  const ds=j.detections||[];
+  el('results').className=ds.length?'':'empty';
+  el('results').innerHTML=ds.length?ds.map((d,i)=>'<div class="item"><span>나사 '+(i+1)+' · <b>'+esc(d.spec)+'</b><br><small class="muted">선택 규격 확률: '+percent(d.target_probability)+' · 인식 신뢰도: '+percent(d.confidence)+'</small></span><span class="muted">'+esc(d.verdict||'확인 필요')+'</span></div>').join(''):'나사를 탐지하면 결과가 표시됩니다.';
+}
+fetch('/api/device_settings').then(r=>r.json()).then(j=>{deviceSettings=j;}).catch(()=>{});
+update();setInterval(update,1000);
+useDevice();
+</script></body></html>
